@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="card" aria-labelledby="login-title">
+  <h1 id="login-title" class="page-title">Log in</h1>
+  {% if message %}
+    <p style="color:#ff6b6b; font-weight:600;">{{ message }}</p>
+  {% endif %}
+  <form action="{{ url_for('login') }}" method="POST" class="form">
+    <div class="grid">
+      <div class="field span-2">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" required />
+      </div>
+      <div class="field span-2">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required />
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" type="submit">Log in</button>
+      <a class="nav-link" href="{{ url_for('signup') }}">Create an account</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
