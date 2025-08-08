@@ -17,7 +17,15 @@
       <div class="logo">🚣‍♀️ RowFlow</div>
       <nav aria-label="Primary" class="main-nav">
         <a href="https://www.worldrowing.com/" target="_blank" rel="noopener" class="nav-link" aria-label="World Rowing website">World Rowing</a>
+        <a href="https://www.concept2.com/indoor-rowers/training/calculators/pace-calculator" target="_blank" rel="noopener" class="nav-link" aria-label="Concept2 pace calculator">Concept2 Pace</a>
         <a href="/export" class="nav-link highlight" aria-label="Export CSV">Export CSV</a>
+        {% if session.username %}
+          <span class="nav-link">Signed in as <strong>{{ session.username }}</strong></span>
+          <a href="{{ url_for('logout') }}" class="nav-link" aria-label="Log out">Logout</a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="nav-link" aria-label="Log in">Login</a>
+          <a href="{{ url_for('signup') }}" class="nav-link" aria-label="Sign up">Sign up</a>
+        {% endif %}
       </nav>
     </div>
   </header>
