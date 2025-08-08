@@ -90,6 +90,11 @@ def sanitize_row(row: Dict[str, Any]) -> Dict[str, Any]:
         split_seconds = parse_split_to_seconds_per_500m(str(row.get("split", "")))
         if not math.isnan(split_seconds) and split_seconds > 0:
             duration_min = (split_seconds * (distance_km * 2.0)) / 60.0
+    # If distance missing but we have duration and split, compute distance
+    if (math.isnan(distance_km)):
+        split_seconds = parse_split_to_seconds_per_500m(str(row.get("split", "")))
+        if (not math.isnan(split_seconds)) and (not math.isnan(duration_min)) and split_seconds > 0 and duration_min > 0:
+            distance_km = (duration_min * 60.0) / split_seconds * 0.5
 
     # Clamp to reasonable precision
     def fmt_num(x: float) -> str:

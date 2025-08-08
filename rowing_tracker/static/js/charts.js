@@ -40,7 +40,8 @@
     if(!isFinite(totalSeconds) || totalSeconds <= 0) return '';
     const m = Math.floor(totalSeconds/60);
     const s = totalSeconds - m*60;
-    return `${m}:${s.toFixed(1).padStart(4,'0')}`.replace(/\.0(?=$)/,'');
+    // Always render with one decimal for consistency (e.g., 2:00.0)
+    return `${m}:${s.toFixed(1).padStart(4,'0')}`;
   }
 
   function initFormHelpers(){
@@ -57,30 +58,67 @@
     const duration = $('#duration_min');
     const split = $('#split');
 
-    function recalcFromDistanceAndDuration(){
-      const dVal = parseFloat(distance.value);
-      const durVal = parseFloat(duration.value);
-      if(!isNaN(dVal) && !isNaN(durVal) && dVal > 0 && durVal > 0){
-        const hours = durVal / 60.0;
-        const speedKmh = dVal / hours; // km/h
-        const secPer500 = 1800.0 / speedKmh;
-        split.value = splitFromSecondsPer500(secPer500);
-      }
+    let isAutoUpdating = false;
+    function withGuard(fn){
+      if(isAutoUpdating) return;
+      try{ isAutoUpdating = true; fn(); } finally { isAutoUpdating = false; }
     }
 
-    function recalcDurationFromSplit(){
-      const dVal = parseFloat(distance.value);
-      const secPer500 = secondsPer500mFromSplit(split.value);
-      if(!isNaN(dVal) && !isNaN(secPer500) && dVal > 0 && secPer500 > 0){
-        const totalSeconds = secPer500 * (dVal*2.0);
-        duration.value = (totalSeconds/60.0).toFixed(0);
+    function isFilledNumber(input){
+      if(!input) return false;
+      const v = parseFloat(input.value);
+      return !isNaN(v) && v > 0;
+    }
+    function isFilledSplit(input){
+      if(!input) return false;
+      const s = secondsPer500mFromSplit(input.value);
+      return !isNaN(s) && s > 0;
+    }
+
+    function recalcAll() {
+      const haveDistance = isFilledNumber(distance);
+      const haveDuration = isFilledNumber(duration);
+      const haveSplit = isFilledSplit(split);
+
+      // Case: distance + duration -> split
+      if(haveDistance && haveDuration && !haveSplit){
+        withGuard(() => {
+          const dVal = parseFloat(distance.value);
+          const durVal = parseFloat(duration.value);
+          const hours = durVal / 60.0;
+          const speedKmh = dVal / hours; // km/h
+          const secPer500 = 1800.0 / speedKmh;
+          split.value = splitFromSecondsPer500(secPer500);
+        });
+        return;
+      }
+
+      // Case: distance + split -> duration
+      if(haveDistance && haveSplit && !haveDuration){
+        withGuard(() => {
+          const dVal = parseFloat(distance.value);
+          const secPer500 = secondsPer500mFromSplit(split.value);
+          const totalSeconds = secPer500 * (dVal * 2.0);
+          duration.value = (totalSeconds/60.0).toFixed(0);
+        });
+        return;
+      }
+
+      // Case: duration + split -> distance
+      if(haveDuration && haveSplit && !haveDistance){
+        withGuard(() => {
+          const durVal = parseFloat(duration.value);
+          const secPer500 = secondsPer500mFromSplit(split.value);
+          const distanceKm = (durVal * 60.0) / secPer500 * 0.5;
+          distance.value = (Math.round(distanceKm * 100) / 100).toFixed(2);
+        });
       }
     }
 
     if(distance && duration && split){
-      distance.addEventListener('input', () => { recalcFromDistanceAndDuration(); recalcDurationFromSplit(); });
-      duration.addEventListener('input', recalcFromDistanceAndDuration);
-      split.addEventListener('input', recalcDurationFromSplit);
+      distance.addEventListener('input', recalcAll);
+      duration.addEventListener('input', recalcAll);
+      split.addEventListener('input', recalcAll);
     }
   }
 
