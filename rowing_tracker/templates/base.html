@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ app_title }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+  <script src="{{ url_for('static', filename='js/charts.js') }}" defer></script>
+</head>
+<body>
+  <header class="app-header" role="banner">
+    <div class="container header-inner">
+      <div class="logo">🚣‍♀️ RowFlow</div>
+      <nav aria-label="Primary" class="main-nav">
+        <a href="https://www.worldrowing.com/" target="_blank" rel="noopener" class="nav-link" aria-label="World Rowing website">World Rowing</a>
+        <a href="/export" class="nav-link highlight" aria-label="Export CSV">Export CSV</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container" id="main" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="app-footer" role="contentinfo">
+    <div class="container">
+      <p>Built with ❤️ for rowers — Data stays in a simple CSV. {{ app_title }}</p>
+    </div>
+  </footer>
+
+  <div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
+</body>
+</html>

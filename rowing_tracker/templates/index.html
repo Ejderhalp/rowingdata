@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h1 class="page-title">Track your rowing, see your progress</h1>
+  <div class="tabs" role="tablist" aria-label="Rowing views">
+    <button class="tab active" role="tab" aria-selected="true" aria-controls="panel-log" id="tab-log" data-target="#panel-log">Log Session</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-table" id="tab-table" data-target="#panel-table">Yearly Table</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-charts" id="tab-charts" data-target="#panel-charts">Charts</button>
+  </div>
+
+  <section id="panel-log" class="tab-panel" role="tabpanel" aria-labelledby="tab-log">
+    <form class="card form" action="{{ url_for('log') }}" method="POST">
+      <div class="grid">
+        <div class="field">
+          <label for="date">Date</label>
+          <input type="date" id="date" name="date" value="" required />
+        </div>
+        <div class="field">
+          <label for="distance_km">Distance (km)</label>
+          <input type="number" step="0.01" min="0" id="distance_km" name="distance_km" placeholder="e.g. 12.5" required />
+        </div>
+        <div class="field">
+          <label for="duration_min">Duration (min)</label>
+          <input type="number" step="1" min="0" id="duration_min" name="duration_min" placeholder="e.g. 60" />
+        </div>
+        <div class="field">
+          <label for="speed_kmh">Speed (km/h)</label>
+          <input type="number" step="0.01" min="0" id="speed_kmh" name="speed_kmh" placeholder="auto-calculated if duration given" />
+        </div>
+        <div class="field">
+          <label for="session_type">Session type</label>
+          <select id="session_type" name="session_type">
+            {% for t in session_types %}
+              <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field span-2">
+          <label for="notes">Notes</label>
+          <input type="text" id="notes" name="notes" placeholder="Intervals, splits, conditions..." />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn-primary" type="submit">Save Session</button>
+        <span class="hint">Tip: Enter distance + duration to auto-fill speed.</span>
+      </div>
+    </form>
+  </section>
+
+  <section id="panel-table" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-table">
+    <div class="card">
+      <div class="toolbar">
+        <label for="yearTableSelect">Year</label>
+        <select id="yearTableSelect" aria-label="Select year for table"></select>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table" id="yearlyTable">
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Mileage (km)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+          <tfoot>
+            <tr>
+              <th scope="row">Total</th>
+              <th id="yearlyTotal">0.00</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="panel-charts" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-charts">
+    <div class="card">
+      <div class="toolbar">
+        <label for="yearChartSelect">Year</label>
+        <select id="yearChartSelect" aria-label="Select year for charts"></select>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3>Daily mileage</h3>
+          <canvas id="dailyLineChart" height="120"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Monthly totals by type</h3>
+          <canvas id="monthlyTotalsChart" height="120"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Speed over time</h3>
+          <canvas id="speedScatterChart" height="120"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>Cumulative mileage</h3>
+          <canvas id="cumulativeChart" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+{% endblock %}
