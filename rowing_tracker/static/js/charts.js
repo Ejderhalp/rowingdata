@@ -17,6 +17,7 @@
     tabs.forEach(tab => {
       tab.addEventListener('click', (e) => {
         e.preventDefault();
+        const prevScroll = window.scrollY;
         tabs.forEach(t => t.classList.remove('active'));
         panels.forEach(p => p.classList.add('hidden'));
         tab.classList.add('active');
@@ -24,6 +25,8 @@
         const panel = $(targetSel);
         if(panel){ panel.classList.remove('hidden'); }
         tab.blur();
+        // Restore previous scroll to avoid auto-scrolling when panels resize
+        window.scrollTo({ top: prevScroll, left: 0, behavior: 'auto' });
       });
     });
   }
@@ -93,6 +96,15 @@
     });
   }
 
+  function commonOptions(){
+    return {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2.2,
+      scales: { y: { beginAtZero: true } }
+    };
+  }
+
   async function loadCharts(){
     const sel = $('#yearChartSelect');
     const year = parseInt(sel.value, 10);
@@ -111,7 +123,7 @@
     window.charts.dailyLineChart = new Chart($('#dailyLineChart'), {
       type: 'line',
       data: { labels: dailyLabels, datasets: [{ label: 'km', data: dailyValues, borderColor: colors.purple, backgroundColor: 'rgba(124,92,255,0.25)', tension: 0.25, pointRadius: 0 }] },
-      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+      options: commonOptions()
     });
 
     const months = Array.from({length:12}, (_,i)=>String(i+1).padStart(2,'0'));
@@ -121,7 +133,7 @@
     window.charts.monthlyTotalsChart = new Chart($('#monthlyTotalsChart'), {
       type: 'bar',
       data: { labels: months, datasets: typeList.map((t, i) => ({ label: t, data: months.map(m => monthlyData.totals[m][t] || 0), backgroundColor: typeColors[i % typeColors.length] })) },
-      options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+      options: { ...commonOptions(), scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
     });
 
     const allPoints = (allData.rows || []).map(r => ({ x: r.date, y: parseFloat(r.speed_kmh || 'NaN'), inYear: (new Date(r.date)).getFullYear() === year })).filter(p => !isNaN(p.y));
@@ -132,7 +144,7 @@
         { label: `Speed ${year} (km/h)`, data: allPoints.filter(p => p.inYear), borderColor: colors.accent, backgroundColor: 'rgba(0,209,178,0.6)' },
         { label: 'Other years (km/h)', data: allPoints.filter(p => !p.inYear), borderColor: colors.muted, backgroundColor: 'rgba(183,192,255,0.3)' }
       ]},
-      options: { responsive: true, maintainAspectRatio: false, parsing: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'km/h' } } } }
+      options: { ...commonOptions(), parsing: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'km/h' } } } }
     });
 
     const cumLabels = tableData.cumulative.map(p => p.date);
@@ -141,7 +153,7 @@
     window.charts.cumulativeChart = new Chart($('#cumulativeChart'), {
       type: 'line',
       data: { labels: cumLabels, datasets: [{ label: 'km', data: cumValues, borderColor: colors.teal, backgroundColor: 'rgba(0,209,178,0.25)', tension: 0.15, pointRadius: 0 }] },
-      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+      options: commonOptions()
     });
   }
 
