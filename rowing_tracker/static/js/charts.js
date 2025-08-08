@@ -15,13 +15,16 @@
     const tabs = $$('.tab');
     const panels = $$('.tab-panel');
     tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault(); // prevent focus scroll/jump
         tabs.forEach(t => t.classList.remove('active'));
         panels.forEach(p => p.classList.add('hidden'));
         tab.classList.add('active');
         const targetSel = tab.getAttribute('data-target');
         const panel = $(targetSel);
         if(panel){ panel.classList.remove('hidden'); }
+        // Blur to avoid sticky focus styles causing scroll
+        tab.blur();
       });
     });
   }
@@ -40,7 +43,6 @@
     if(!isFinite(totalSeconds) || totalSeconds <= 0) return '';
     const m = Math.floor(totalSeconds/60);
     const s = totalSeconds - m*60;
-    // Always render with one decimal for consistency (e.g., 2:00.0)
     return `${m}:${s.toFixed(1).padStart(4,'0')}`;
   }
 
@@ -80,20 +82,19 @@
       const haveDuration = isFilledNumber(duration);
       const haveSplit = isFilledSplit(split);
 
-      // Case: distance + duration -> split
+      // distance + duration -> split
       if(haveDistance && haveDuration && !haveSplit){
         withGuard(() => {
           const dVal = parseFloat(distance.value);
           const durVal = parseFloat(duration.value);
           const hours = durVal / 60.0;
-          const speedKmh = dVal / hours; // km/h
+          const speedKmh = dVal / hours;
           const secPer500 = 1800.0 / speedKmh;
           split.value = splitFromSecondsPer500(secPer500);
         });
         return;
       }
-
-      // Case: distance + split -> duration
+      // distance + split -> duration
       if(haveDistance && haveSplit && !haveDuration){
         withGuard(() => {
           const dVal = parseFloat(distance.value);
@@ -103,8 +104,7 @@
         });
         return;
       }
-
-      // Case: duration + split -> distance
+      // duration + split -> distance
       if(haveDuration && haveSplit && !haveDistance){
         withGuard(() => {
           const durVal = parseFloat(duration.value);
@@ -135,62 +135,17 @@
   }
 
   function populateYearSelects(currentYear){
-    const selects = ['#yearTableSelect', '#yearChartSelect'].map(sel => $(sel)).filter(Boolean);
+    const sel = $('#yearChartSelect');
+    if(!sel) return;
     const ys = yearsAround(currentYear);
-    for(const sel of selects){
-      sel.innerHTML = '';
-      ys.forEach(y => {
-        const opt = document.createElement('option');
-        opt.value = String(y);
-        opt.textContent = String(y);
-        if(y === currentYear) opt.selected = true;
-        sel.appendChild(opt);
-      });
-    }
-  }
-
-  function formatKm(x){
-    return (Math.round(x*100)/100).toFixed(2);
-  }
-
-  async function loadYearlyTable(){
-    const sel = $('#yearTableSelect');
-    const year = parseInt(sel.value, 10);
-    const data = await fetchJSON(`/api/yearly_table?year=${year}`);
-    const tbody = $('#yearlyTable tbody');
-    const totalEl = $('#yearlyTotal');
-    tbody.innerHTML = '';
-    let total = 0;
-    Object.entries(data.daily_mileage).forEach(([d, km]) => {
-      const tr = document.createElement('tr');
-      const td1 = document.createElement('td');
-      const td2 = document.createElement('td');
-      td1.textContent = d;
-      td2.textContent = formatKm(km);
-      tr.appendChild(td1); tr.appendChild(td2);
-      tbody.appendChild(tr);
-      total += km;
+    sel.innerHTML = '';
+    ys.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = String(y);
+      opt.textContent = String(y);
+      if(y === currentYear) opt.selected = true;
+      sel.appendChild(opt);
     });
-    totalEl.textContent = formatKm(total);
-  }
-
-  let charts = {};
-
-  function destroyChart(id){
-    if(charts[id]){ charts[id].destroy(); delete charts[id]; }
-  }
-
-  function colorPalette(){
-    return {
-      purple: '#7c5cff',
-      teal: '#00d1b2',
-      red: '#ff6b6b',
-      yellow: '#ffdd57',
-      blue: '#4da3ff',
-      pink: '#ff89d6',
-      accent: '#00d1b2',
-      muted: '#b7c0ff'
-    };
   }
 
   async function loadCharts(){
@@ -202,20 +157,18 @@
       fetchJSON('/api/data')
     ]);
 
-    const colors = colorPalette();
+    const colors = {
+      purple: '#7c5cff', teal: '#00d1b2', red: '#ff6b6b', yellow: '#ffdd57', blue: '#4da3ff', pink: '#ff89d6', accent: '#00d1b2', muted: '#b7c0ff'
+    };
 
     // Daily mileage line
     const dailyLabels = Object.keys(tableData.daily_mileage);
     const dailyValues = Object.values(tableData.daily_mileage);
-    destroyChart('dailyLineChart');
-    charts.dailyLineChart = new Chart($('#dailyLineChart'), {
+    if(window.charts && window.charts.dailyLineChart){ window.charts.dailyLineChart.destroy(); }
+    window.charts = window.charts || {};
+    window.charts.dailyLineChart = new Chart($('#dailyLineChart'), {
       type: 'line',
-      data: {
-        labels: dailyLabels,
-        datasets: [{
-          label: 'km', data: dailyValues, borderColor: colors.purple, backgroundColor: 'rgba(124,92,255,0.25)', tension: 0.25, pointRadius: 0
-        }]
-      },
+      data: { labels: dailyLabels, datasets: [{ label: 'km', data: dailyValues, borderColor: colors.purple, backgroundColor: 'rgba(124,92,255,0.25)', tension: 0.25, pointRadius: 0 }] },
       options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
     });
 
@@ -223,46 +176,30 @@
     const months = Array.from({length:12}, (_,i)=>String(i+1).padStart(2,'0'));
     const typeList = monthlyData.session_types;
     const typeColors = [colors.teal, colors.red, colors.blue, colors.pink, colors.yellow];
-    const datasets = typeList.map((t, i) => ({
-      label: t,
-      data: months.map(m => monthlyData.totals[m][t] || 0),
-      backgroundColor: typeColors[i % typeColors.length]
-    }));
-    destroyChart('monthlyTotalsChart');
-    charts.monthlyTotalsChart = new Chart($('#monthlyTotalsChart'), {
+    if(window.charts.monthlyTotalsChart){ window.charts.monthlyTotalsChart.destroy(); }
+    window.charts.monthlyTotalsChart = new Chart($('#monthlyTotalsChart'), {
       type: 'bar',
-      data: { labels: months, datasets },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
-      }
+      data: { labels: months, datasets: typeList.map((t, i) => ({ label: t, data: months.map(m => monthlyData.totals[m][t] || 0), backgroundColor: typeColors[i % typeColors.length] })) },
+      options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
     });
 
-    // Speed scatter over time (all data; highlight selected year)
-    const allPoints = (allData.rows || []).map(r => ({
-      x: r.date, y: parseFloat(r.speed_kmh || 'NaN'), inYear: (new Date(r.date)).getFullYear() === year
-    })).filter(p => !isNaN(p.y));
-    destroyChart('speedScatterChart');
-    charts.speedScatterChart = new Chart($('#speedScatterChart'), {
+    // Speed scatter over time
+    const allPoints = (allData.rows || []).map(r => ({ x: r.date, y: parseFloat(r.speed_kmh || 'NaN'), inYear: (new Date(r.date)).getFullYear() === year })).filter(p => !isNaN(p.y));
+    if(window.charts.speedScatterChart){ window.charts.speedScatterChart.destroy(); }
+    window.charts.speedScatterChart = new Chart($('#speedScatterChart'), {
       type: 'scatter',
-      data: {
-        datasets: [
-          { label: `Speed ${year} (km/h)`, data: allPoints.filter(p => p.inYear), borderColor: colors.accent, backgroundColor: 'rgba(0,209,178,0.6)' },
-          { label: 'Other years (km/h)', data: allPoints.filter(p => !p.inYear), borderColor: colors.muted, backgroundColor: 'rgba(183,192,255,0.3)' }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        parsing: false,
-        scales: { y: { beginAtZero: true, title: { display: true, text: 'km/h' } } }
-      }
+      data: { datasets: [
+        { label: `Speed ${year} (km/h)`, data: allPoints.filter(p => p.inYear), borderColor: colors.accent, backgroundColor: 'rgba(0,209,178,0.6)' },
+        { label: 'Other years (km/h)', data: allPoints.filter(p => !p.inYear), borderColor: colors.muted, backgroundColor: 'rgba(183,192,255,0.3)' }
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, parsing: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'km/h' } } } }
     });
 
     // Cumulative mileage line
     const cumLabels = tableData.cumulative.map(p => p.date);
     const cumValues = tableData.cumulative.map(p => p.km);
-    destroyChart('cumulativeChart');
-    charts.cumulativeChart = new Chart($('#cumulativeChart'), {
+    if(window.charts.cumulativeChart){ window.charts.cumulativeChart.destroy(); }
+    window.charts.cumulativeChart = new Chart($('#cumulativeChart'), {
       type: 'line',
       data: { labels: cumLabels, datasets: [{ label: 'km', data: cumValues, borderColor: colors.teal, backgroundColor: 'rgba(0,209,178,0.25)', tension: 0.15, pointRadius: 0 }] },
       options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
@@ -282,13 +219,9 @@
     const currentYear = new Date().getFullYear();
     populateYearSelects(currentYear);
 
-    // listeners
-    const tableYear = $('#yearTableSelect');
     const chartYear = $('#yearChartSelect');
-    if(tableYear){ tableYear.addEventListener('change', loadYearlyTable); }
     if(chartYear){ chartYear.addEventListener('change', loadCharts); }
 
-    loadYearlyTable().catch(console.error);
     loadCharts().catch(console.error);
   }
 

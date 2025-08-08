@@ -4,7 +4,6 @@
   <h1 class="page-title">Track your rowing, see your progress</h1>
   <div class="tabs" role="tablist" aria-label="Rowing views">
     <button class="tab active" role="tab" aria-selected="true" aria-controls="panel-log" id="tab-log" data-target="#panel-log">Log Session</button>
-    <button class="tab" role="tab" aria-selected="false" aria-controls="panel-table" id="tab-table" data-target="#panel-table">Yearly Table</button>
     <button class="tab" role="tab" aria-selected="false" aria-controls="panel-charts" id="tab-charts" data-target="#panel-charts">Charts</button>
   </div>
 
@@ -42,35 +41,9 @@
       </div>
       <div class="actions">
         <button class="btn-primary" type="submit">Save Session</button>
-        <span class="hint">Tip: Enter distance + duration or split to auto-fill the other.</span>
+        <span class="hint">Tip: Enter any two of distance, duration, split to auto-fill the third.</span>
       </div>
     </form>
-  </section>
-
-  <section id="panel-table" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-table">
-    <div class="card">
-      <div class="toolbar">
-        <label for="yearTableSelect">Year</label>
-        <select id="yearTableSelect" aria-label="Select year for table"></select>
-      </div>
-      <div class="table-wrapper">
-        <table class="data-table" id="yearlyTable">
-          <thead>
-            <tr>
-              <th scope="col">Date</th>
-              <th scope="col">Mileage (km)</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-          <tfoot>
-            <tr>
-              <th scope="row">Total</th>
-              <th id="yearlyTotal">0.00</th>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
   </section>
 
   <section id="panel-charts" class="tab-panel hidden" role="tabpanel" aria-labelledby="tab-charts">
