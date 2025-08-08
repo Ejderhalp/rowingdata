@@ -26,6 +26,23 @@
     });
   }
 
+  function secondsPer500mFromSplit(splitStr){
+    if(!splitStr) return NaN;
+    if(!splitStr.includes(':')) return NaN;
+    const [m, s] = splitStr.split(':');
+    const minutes = parseInt(m, 10);
+    const seconds = parseFloat(s);
+    const total = minutes*60 + seconds;
+    if(!isFinite(total) || total <= 0) return NaN;
+    return total;
+  }
+  function splitFromSecondsPer500(totalSeconds){
+    if(!isFinite(totalSeconds) || totalSeconds <= 0) return '';
+    const m = Math.floor(totalSeconds/60);
+    const s = totalSeconds - m*60;
+    return `${m}:${s.toFixed(1).padStart(4,'0')}`.replace(/\.0(?=$)/,'');
+  }
+
   function initFormHelpers(){
     const dateInput = $('#date');
     if(dateInput && !dateInput.value){
@@ -38,19 +55,32 @@
 
     const distance = $('#distance_km');
     const duration = $('#duration_min');
-    const speed = $('#speed_kmh');
+    const split = $('#split');
 
-    function recalc(){
+    function recalcFromDistanceAndDuration(){
       const dVal = parseFloat(distance.value);
       const durVal = parseFloat(duration.value);
-      if(!isNaN(dVal) && !isNaN(durVal) && durVal > 0){
-        const kmh = dVal / (durVal/60);
-        speed.value = (Math.round(kmh * 100)/100).toFixed(2);
+      if(!isNaN(dVal) && !isNaN(durVal) && dVal > 0 && durVal > 0){
+        const hours = durVal / 60.0;
+        const speedKmh = dVal / hours; // km/h
+        const secPer500 = 1800.0 / speedKmh;
+        split.value = splitFromSecondsPer500(secPer500);
       }
     }
-    if(distance && duration && speed){
-      distance.addEventListener('input', recalc);
-      duration.addEventListener('input', recalc);
+
+    function recalcDurationFromSplit(){
+      const dVal = parseFloat(distance.value);
+      const secPer500 = secondsPer500mFromSplit(split.value);
+      if(!isNaN(dVal) && !isNaN(secPer500) && dVal > 0 && secPer500 > 0){
+        const totalSeconds = secPer500 * (dVal*2.0);
+        duration.value = (totalSeconds/60.0).toFixed(0);
+      }
+    }
+
+    if(distance && duration && split){
+      distance.addEventListener('input', () => { recalcFromDistanceAndDuration(); recalcDurationFromSplit(); });
+      duration.addEventListener('input', recalcFromDistanceAndDuration);
+      split.addEventListener('input', recalcDurationFromSplit);
     }
   }
 
@@ -179,8 +209,8 @@
       type: 'scatter',
       data: {
         datasets: [
-          { label: `Speed ${year}`, data: allPoints.filter(p => p.inYear), borderColor: colors.accent, backgroundColor: 'rgba(0,209,178,0.6)' },
-          { label: 'Other years', data: allPoints.filter(p => !p.inYear), borderColor: colors.muted, backgroundColor: 'rgba(183,192,255,0.3)' }
+          { label: `Speed ${year} (km/h)`, data: allPoints.filter(p => p.inYear), borderColor: colors.accent, backgroundColor: 'rgba(0,209,178,0.6)' },
+          { label: 'Other years (km/h)', data: allPoints.filter(p => !p.inYear), borderColor: colors.muted, backgroundColor: 'rgba(183,192,255,0.3)' }
         ]
       },
       options: {

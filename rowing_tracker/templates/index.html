@@ -24,8 +24,8 @@
           <input type="number" step="1" min="0" id="duration_min" name="duration_min" placeholder="e.g. 60" />
         </div>
         <div class="field">
-          <label for="speed_kmh">Speed (km/h)</label>
-          <input type="number" step="0.01" min="0" id="speed_kmh" name="speed_kmh" placeholder="auto-calculated if duration given" />
+          <label for="split">Split (min:sec/500m)</label>
+          <input type="text" pattern="^[0-9]{1,2}:[0-5]?[0-9](\.[0-9]+)?$" id="split" name="split" placeholder="e.g. 2:05 or 1:58.5" />
         </div>
         <div class="field">
           <label for="session_type">Session type</label>
@@ -42,7 +42,7 @@
       </div>
       <div class="actions">
         <button class="btn-primary" type="submit">Save Session</button>
-        <span class="hint">Tip: Enter distance + duration to auto-fill speed.</span>
+        <span class="hint">Tip: Enter distance + duration or split to auto-fill the other.</span>
       </div>
     </form>
   </section>
