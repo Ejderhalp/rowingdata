@@ -23,8 +23,8 @@
           <input type="number" step="1" min="0" id="duration_min" name="duration_min" placeholder="e.g. 60" />
         </div>
         <div class="field">
-          <label for="split">Split (min:sec/500m)</label>
-          <input type="text" pattern="^[0-9]{1,2}:[0-5]?[0-9](\.[0-9]+)?$" id="split" name="split" placeholder="e.g. 2:05 or 1:58.5" />
+          <label for="split_display">Split (min:sec/500m)</label>
+          <input type="text" id="split_display" value="" placeholder="auto-calculated" readonly disabled />
         </div>
         <div class="field">
           <label for="session_type">Session type</label>
@@ -41,7 +41,7 @@
       </div>
       <div class="actions">
         <button class="btn-primary" type="submit">Save Session</button>
-        <span class="hint">Tip: Enter any two of distance, duration, split to auto-fill the third.</span>
+        <span class="hint">Split is auto-calculated from distance and time.</span>
       </div>
     </form>
   </section>

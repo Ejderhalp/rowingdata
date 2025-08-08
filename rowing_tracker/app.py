@@ -15,7 +15,7 @@ CSV_FIELDS = [
     "date",            # YYYY-MM-DD
     "distance_km",     # float
     "duration_min",    # float (optional)
-    "speed_kmh",       # float (optional, derived from split or duration)
+    "speed_kmh",       # float (optional, derived)
     "session_type",    # str
     "notes",           # str
     "created_at"       # ISO timestamp
@@ -40,61 +40,26 @@ def parse_float(value: str) -> float:
         return math.nan
 
 
-def parse_split_to_seconds_per_500m(value: str) -> float:
-    if not value:
-        return math.nan
-    s = value.strip()
-    # Accept formats like MM:SS or M:SS or MM:SS.s
-    try:
-        if ":" not in s:
-            return math.nan
-        minutes_str, seconds_str = s.split(":", 1)
-        minutes = int(minutes_str)
-        seconds = float(seconds_str)
-        total_seconds = minutes * 60.0 + seconds
-        if total_seconds <= 0:
-            return math.nan
-        return total_seconds
-    except Exception:
-        return math.nan
-
-
 def sanitize_row(row: Dict[str, Any]) -> Dict[str, Any]:
     # Coerce and clean inputs
     d = row.get("date", "").strip()
     try:
-        # Validate/normalize date format
         parsed = datetime.strptime(d, "%Y-%m-%d").date()
         d = parsed.isoformat()
     except Exception:
-        # Fall back to today if invalid
         d = date.today().isoformat()
 
     distance_km = parse_float(str(row.get("distance_km", "")).strip())
     duration_min = parse_float(str(row.get("duration_min", "")).strip())
 
-    # speed may be provided directly (legacy) or via split
+    # Legacy direct speed if present, otherwise compute from distance/time
     speed_kmh = parse_float(str(row.get("speed_kmh", "")).strip())
-    if math.isnan(speed_kmh):
-        split_seconds = parse_split_to_seconds_per_500m(str(row.get("split", "")))
-        if not math.isnan(split_seconds) and split_seconds > 0:
-            speed_kmh = 1800.0 / split_seconds  # 0.5 km per split
-
-    # Backfill missing fields if possible
-    if (math.isnan(speed_kmh)) and (not math.isnan(distance_km)) and (not math.isnan(duration_min)) and duration_min > 0:
+    if math.isnan(speed_kmh) and (not math.isnan(distance_km)) and (not math.isnan(duration_min)) and duration_min > 0:
         speed_kmh = distance_km / (duration_min / 60.0)
+
+    # If duration missing but distance and speed known
     if (math.isnan(duration_min)) and (not math.isnan(distance_km)) and (not math.isnan(speed_kmh)) and speed_kmh > 0:
         duration_min = (distance_km / speed_kmh) * 60.0
-    # If duration still missing but we have distance and split, compute via split
-    if (math.isnan(duration_min)) and (not math.isnan(distance_km)):
-        split_seconds = parse_split_to_seconds_per_500m(str(row.get("split", "")))
-        if not math.isnan(split_seconds) and split_seconds > 0:
-            duration_min = (split_seconds * (distance_km * 2.0)) / 60.0
-    # If distance missing but we have duration and split, compute distance
-    if (math.isnan(distance_km)):
-        split_seconds = parse_split_to_seconds_per_500m(str(row.get("split", "")))
-        if (not math.isnan(split_seconds)) and (not math.isnan(duration_min)) and split_seconds > 0 and duration_min > 0:
-            distance_km = (duration_min * 60.0) / split_seconds * 0.5
 
     # Clamp to reasonable precision
     def fmt_num(x: float) -> str:
